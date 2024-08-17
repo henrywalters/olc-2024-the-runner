@@ -14,6 +14,10 @@
 #include "imgui_demo.cpp"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "scenes/runtime.h"
+#include "common/gameState.h"
+#include "common/actionMap.h"
+
 #endif
 
 using namespace hg::graphics;
@@ -82,9 +86,9 @@ void Game::onInit() {
         });
 
 #endif
-
+        scenes()->add<Runtime>("runtime", m_window);
         scenes()->add<MainMenu>("main_menu", m_window);
-        scenes()->activate("main_menu");
+        scenes()->activate("runtime");
     };
 
     scenes()->activate("loading");
@@ -137,6 +141,9 @@ void Game::onDestroy() {
 void Game::onUpdate(double dt) {
     // FILL ME IN!
 #if !HEADLESS
+
+    GameState::Get()->input = m_window->input.player(ACTION_MAP);
+
 #if USE_CONSOLE
     if (m_console) {
         m_console->scroll(m_window->input.devices.keyboardMouse()->axes[MouseAxes::WheelY]);

@@ -39,6 +39,7 @@ public:
 
     hg::Publisher<EventType, Event> events;
 
+    hg::utils::enum_t debugLevel = DebugLevel::Light;
     hg::input::Actions<hg::utils::enum_t> input;
     hg::utils::Random random;
 
