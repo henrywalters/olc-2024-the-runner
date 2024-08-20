@@ -6,6 +6,7 @@
 #include <hagame/graphics/windows.h>
 #include <hagame/core/assets.h>
 #include <hagame/common/scenes/loading.h>
+#include <hagame/utils/profiler.h>
 
 #include "scenes/mainMenu.h"
 
@@ -22,6 +23,7 @@
 
 using namespace hg::graphics;
 using namespace hg::input::devices;
+using namespace hg::utils;
 
 void Game::onInit() {
 #if !HEADLESS
@@ -155,6 +157,9 @@ void Game::onUpdate(double dt) {
 #if USE_IMGUI
     ImGui::Begin("Demo Window");
     ImGui::Text(("FPS: " + std::to_string(1.0 / dt)).c_str());
+    for (const auto& [key, profile] : Profiler::Profiles()) {
+        ImGui::Text("%s: %f ms", key.c_str(), profile.average() * 1000);
+    }
     ImGui::End();
 #endif
 }

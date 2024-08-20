@@ -14,12 +14,17 @@
 class Movement : public hg::System {
 public:
 
+    // Make sure to call this after generating the map!
+    void bakeStaticColliders();
+
     void onUpdate(double dt) override;
 
 private:
 
+    hg::EntityMap2D m_staticColliderMap;
     hg::EntityMap2D m_colliderMap;
 
+    void handleCollision(hg::Entity* entity, Body* body, hg::Entity* neighbor);
 };
 
 #endif //THERUNNER_MOVEMENT_H

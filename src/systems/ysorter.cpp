@@ -4,13 +4,19 @@
 
 #include "ysorter.h"
 #include <hagame/core/scene.h>
+#include <hagame/utils/profiler.h>
 
 #include "renderer.h"
 
 #include "../components/ysort.h"
 #include "imgui.h"
 
+using namespace hg::utils;
+
 void YSorter::onUpdate(double dt) {
+
+    Profiler::Start("YSorter");
+
     std::vector<YSort*> sortables;
 
     auto renderer = scene->getSystem<Renderer>();
@@ -37,4 +43,5 @@ void YSorter::onUpdate(double dt) {
         sortables[i]->entity->transform.position[2] = i + 1;
     }
 
+    Profiler::End("YSorter");
 }

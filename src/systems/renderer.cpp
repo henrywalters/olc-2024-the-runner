@@ -107,6 +107,7 @@ void Renderer::onRender(double dt) {
     combinedPass(dt);
 
     camera.update(dt);
+
 }
 
 void Renderer::onUpdate(double dt) {
@@ -128,37 +129,6 @@ void Renderer::colorPass(double dt) {
         m_batchRenderer.quads.batch(entity, quad);
     });
 
-    scene->entities.forEach<Resource>([&](Resource* resource, Entity* entity) {
-        auto def = resource->getDef();
-        m_batchRenderer.sprites.batch(
-            def.sprite,
-            def.size,
-            Vec2::Zero(),
-            Color::white(),
-            Mat4::Translation(entity->transform.position)
-        );
-    });
-
-    auto tileSS = getSpriteSheet("tiles");
-    auto mapImage = getTexture("map")->image.get();
-
-    auto treeSS = getSpriteSheet("trees");
-    auto treeTex = getTexture("trees");
-    auto cellSize = treeTex->image->size.div(treeSS->atlas.size).cast<float>();
-
-    scene->entities.forEach<TreeComponent>([&](TreeComponent* tree, Entity* entity) {
-        if (inView(entity->position())) {
-            m_batchRenderer.sprites.batch(
-                    "trees",
-                    treeSS->atlas.getCellSize(treeTex->image->size, true),
-                    Vec2::Zero(),
-                    treeSS->atlas.getRect(tree->index, treeTex->image->size),
-                    Color::white(),
-                    entity->model()
-            );
-        }
-    });
-
     scene->entities.forEach<Sprite>([&](auto sprite, auto entity) {
         //m_batchRenderer.sprites.batch(entity, sprite);
         m_batchRenderer.sprites.batch(
@@ -170,6 +140,16 @@ void Renderer::colorPass(double dt) {
                 entity->model()
             );
     });
+
+
+    auto tileSS = getSpriteSheet("tiles");
+    auto mapImage = getTexture("map")->image.get();
+
+    auto treeSS = getSpriteSheet("trees");
+    auto treeTex = getTexture("trees");
+
+    auto resourceSS = getSpriteSheet("resources");
+    auto resourceTex = getTexture("resources");
 
     scene->entities.forEach<Player>([&](Player* player, Entity* playerEntity) {
         for (Entity* entity : state->mapTiles.getNeighbors(playerEntity->transform.position.resize<2>(), (hg::Vec2i::Identity() + m_window->size().div(PIXELS_PER_METER / MAP_TILE_METERS)).cast<float>())) {
@@ -183,6 +163,34 @@ void Renderer::colorPass(double dt) {
                 Color::white(),
                 entity->model()
             );
+        }
+
+        for (Entity* entity : state->mapProps.getNeighbors(playerEntity->transform.position.resize<2>(), (hg::Vec2i::Identity() + m_window->size().div(PIXELS_PER_METER / MAP_TILE_METERS)).cast<float>())) {
+            auto resource = entity->getComponent<Resource>();
+            auto tree = entity->getComponent<TreeComponent>();
+
+            if (resource) {
+                auto def = resource->getDef();
+                m_batchRenderer.sprites.batch(
+                        "resources",
+                        resourceSS->atlas.getCellSize(resourceTex->image->size, true),
+                        Vec2::Zero(),
+                        resourceSS->atlas.getRect(def.tileIndex, resourceTex->image->size),
+                        Color::white(),
+                        entity->model()
+                );
+            }
+
+            if (tree) {
+                m_batchRenderer.sprites.batch(
+                    "trees",
+                    treeSS->atlas.getCellSize(treeTex->image->size, true),
+                    Vec2::Zero(),
+                    treeSS->atlas.getRect(tree->index, treeTex->image->size),
+                    Color::white(),
+                    entity->model()
+                );
+            }
         }
     });
 
@@ -268,21 +276,21 @@ void Renderer::debugPass(double dt) {
     if (GameState::Get()->debugLevel == DebugLevel::Heavy) {
 
         scene->entities.forEach<YSort>([&](YSort* sorter, Entity* entity) {
-            if (inView(entity->position())) {
+            if (inView(entity->position(), 0.25)) {
                 auto pos = entity->position() + sorter->sortPoint.resize<3>();
-                // Debug::DrawCircle(pos.x(), pos.y(), 0.01, Color::green(), 1. / PIXELS_PER_METER);
+                Debug::DrawCircle(pos.x(), pos.y(), 0.05, Color::green(), 1. / PIXELS_PER_METER);
             }
         });
 
         scene->entities.forEach<RectCollider>([&](RectCollider *coll, Entity *entity) {
-            if (inView(entity->position())) {
+            if (inView(entity->position(), 0.25)) {
                 Debug::DrawRect(Rect(coll->pos + entity->position().resize<2>(), coll->size), Color::red(),
                                 1.0 / PIXELS_PER_METER);
             }
         });
 
         scene->entities.forEach<CircleCollider>([&](CircleCollider *coll, Entity *entity) {
-            if (inView(entity->position())) {
+            if (inView(entity->position(), 0.25)) {
                 Vec2 pos = entity->transform.position.resize<2>();
                 Debug::DrawCircle(pos[0] + coll->pos[0], pos[1] + coll->pos[1], coll->radius, Color::red(),
                                   1.0 / PIXELS_PER_METER);
@@ -356,6 +364,6 @@ void Renderer::renderTile(hg::Vec2i index, hg::Vec3 position) {
     m_batchRenderer.sprites.batch("tilesheet", Vec2(1.), Vec2::Identity(), rect, Color::white(), model);
 }
 
-bool Renderer::inView(hg::Vec3 pos) const {
-    return (pos.resize<2>() - camera.transform.position.resize<2>()).magnitude() <= maxBlocks();
+bool Renderer::inView(hg::Vec3 pos, float scale) const {
+    return (pos.resize<2>() - camera.transform.position.resize<2>()).magnitude() <= maxBlocks() * scale;
 }

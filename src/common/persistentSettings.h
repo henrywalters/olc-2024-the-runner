@@ -17,7 +17,6 @@ public:
     hg::utils::Watcher<bool> devMode;
     hg::utils::Watcher<bool> vsync;
 
-
 private:
 
     void save();

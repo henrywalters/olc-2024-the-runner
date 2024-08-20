@@ -56,7 +56,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 MESSAGE("${CMAKE_CURRENT_LIST_DIR}")
 find_package(HaGame2 REQUIRED)
 
-add_executable(TheRunner main.cpp src/constants.h src/game.h src/game.cpp src/scenes/mainMenu.h src/scenes/mainMenu.cpp src/common/actionMap.h src/common/gameState.cpp src/common/persistentSettings.cpp src/common/ui.cpp src/scenes/runtime.h src/scenes/runtime.cpp src/systems/renderer.cpp src/components/resource.h src/components/resource.h  src/common/resources.h src/components/player.h src/components/body.h src/systems/movement.h src/systems/movement.cpp src/common/tiles.h src/components/spriteSheet.h src/systems/ysorter.cpp src/systems/ysorter.h)
+add_executable(TheRunner main.cpp src/constants.h src/game.h src/game.cpp src/scenes/mainMenu.h src/scenes/mainMenu.cpp src/common/actionMap.h src/common/gameState.cpp src/common/persistentSettings.cpp src/common/ui.cpp src/scenes/runtime.h src/scenes/runtime.cpp src/systems/renderer.cpp src/components/resource.h src/components/resource.h  src/common/resources.h src/components/player.h src/components/body.h src/systems/movement.h src/systems/movement.cpp src/common/tiles.h src/components/spriteSheet.h src/systems/ysorter.cpp src/systems/ysorter.h src/common/mapBuilder.h src/common/mapBuilder.cpp)
 target_include_directories(TheRunner PUBLIC ${HAGAME2_INCLUDE_DIR})
 target_include_directories(TheRunner PUBLIC ${FIND_HAGAME2_PATHS}/thirdparty/asio/asio/include/)
 target_link_libraries(TheRunner ${HAGAME2_LIBRARY})

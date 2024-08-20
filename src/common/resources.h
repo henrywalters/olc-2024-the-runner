@@ -15,12 +15,14 @@ ENUM_VALUE(ResourceType, Wheat)
 
 struct ResourceDef {
     ResourceType::type type;
-    std::string sprite;
-    hg::Vec2 size;
+    hg::Vec2i tileIndex;
+    float rarity;
 };
 
 const std::vector<ResourceDef> RESOURCES {
-    ResourceDef {ResourceType::Stone, "stone", hg::Vec2(0.5, 0.5)},
+    ResourceDef{ResourceType::Wood, hg::Vec2i(0, 0), 0.05},
+    ResourceDef {ResourceType::Stone, hg::Vec2i(0, 1), 0.025},
+    ResourceDef {ResourceType::Wheat, hg::Vec2i(0, 2), 0.25},
 };
 
 #endif //THERUNNER_RESOURCES_H

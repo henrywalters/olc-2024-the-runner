@@ -44,7 +44,7 @@ void main() {
     for(int i = 0; i < 9; i++)
     col += sampleTex[i] * kernel[i];
 
-    float min_light = 0.02f;
+    float min_light = 0.1f;
     float min_color = 0.0f;
     vec4 light_lb = vec4(min_light, min_light, min_light, 1.0);
     vec4 color_lb = vec4(min_color, min_color, min_color, 1.0);

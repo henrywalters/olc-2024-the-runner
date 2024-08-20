@@ -36,7 +36,7 @@ public:
 
     Camera camera;
 
-    bool inView(hg::Vec3 pos) const;
+    bool inView(hg::Vec3 pos, float scale = 1.0) const;
 
     Renderer(hg::graphics::Window* window);
 

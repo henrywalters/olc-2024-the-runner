@@ -12,7 +12,7 @@
 #define SPLASH_SCREEN "hg_studio"
 #define SPLASH_FONT "8bit"
 
-#define TREE_DENSITY 0.075
+#define TREE_DENSITY 0.1
 
 #define PIXELS_PER_METER 64
 #define MAP_TILE_METERS 1

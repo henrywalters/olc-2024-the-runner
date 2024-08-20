@@ -40,10 +40,11 @@ public:
     PersistentSettings persistentSettings;
 
     hg::EntityMap2D mapTiles;
+    hg::EntityMap2D mapProps;
 
     hg::Publisher<EventType, Event> events;
 
-    hg::utils::enum_t debugLevel = DebugLevel::Heavy;
+    hg::utils::enum_t debugLevel = DebugLevel::Light;
     hg::input::Actions<hg::utils::enum_t> input;
     hg::utils::Random random = hg::utils::Random(RANDOM_SEED);
 
