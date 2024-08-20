@@ -9,6 +9,8 @@
 #include <hagame/utils/enum.h>
 #include <hagame/input/input.h>
 #include <hagame/utils/variantMap.h>
+#include <hagame/core/entityMap.h>
+#include <hagame/graphics/resolution.h>
 
 #include "../constants.h"
 #include "../common/enums/actions.h"
@@ -37,11 +39,13 @@ public:
 
     PersistentSettings persistentSettings;
 
+    hg::EntityMap2D mapTiles;
+
     hg::Publisher<EventType, Event> events;
 
-    hg::utils::enum_t debugLevel = DebugLevel::Light;
+    hg::utils::enum_t debugLevel = DebugLevel::Heavy;
     hg::input::Actions<hg::utils::enum_t> input;
-    hg::utils::Random random;
+    hg::utils::Random random = hg::utils::Random(RANDOM_SEED);
 
     static GameState* Get();
 

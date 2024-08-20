@@ -154,7 +154,7 @@ void Game::onUpdate(double dt) {
 
 #if USE_IMGUI
     ImGui::Begin("Demo Window");
-    ImGui::Text(("DT: " + std::to_string(dt)).c_str());
+    ImGui::Text(("FPS: " + std::to_string(1.0 / dt)).c_str());
     ImGui::End();
 #endif
 }

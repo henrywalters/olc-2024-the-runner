@@ -10,6 +10,11 @@
 #include "renderer.h"
 #include "../constants.h"
 #include "../components/player.h"
+#include "../components/resource.h"
+#include "../components/tile.h"
+#include "../components/spriteSheet.h"
+#include "../components/tree.h"
+#include "../components/ysort.h"
 
 using namespace hg;
 using namespace hg::graphics;
@@ -111,6 +116,9 @@ void Renderer::onUpdate(double dt) {
 }
 
 void Renderer::colorPass(double dt) {
+
+    auto state = GameState::Get();
+
     auto shader = getShader(TEXTURE_SHADER.name);
     shader->use();
     shader->setMat4("projection", camera.projection());
@@ -120,8 +128,35 @@ void Renderer::colorPass(double dt) {
         m_batchRenderer.quads.batch(entity, quad);
     });
 
-    scene->entities.forEach<Player>([&](auto player, Entity* entity) {
-        Debug::DrawRect(Rect(entity->transform.position.resize<2>(), Vec2::Identity()), Color::blue(), 2.0 / PIXELS_PER_METER);
+    scene->entities.forEach<Resource>([&](Resource* resource, Entity* entity) {
+        auto def = resource->getDef();
+        m_batchRenderer.sprites.batch(
+            def.sprite,
+            def.size,
+            Vec2::Zero(),
+            Color::white(),
+            Mat4::Translation(entity->transform.position)
+        );
+    });
+
+    auto tileSS = getSpriteSheet("tiles");
+    auto mapImage = getTexture("map")->image.get();
+
+    auto treeSS = getSpriteSheet("trees");
+    auto treeTex = getTexture("trees");
+    auto cellSize = treeTex->image->size.div(treeSS->atlas.size).cast<float>();
+
+    scene->entities.forEach<TreeComponent>([&](TreeComponent* tree, Entity* entity) {
+        if (inView(entity->position())) {
+            m_batchRenderer.sprites.batch(
+                    "trees",
+                    treeSS->atlas.getCellSize(treeTex->image->size, true),
+                    Vec2::Zero(),
+                    treeSS->atlas.getRect(tree->index, treeTex->image->size),
+                    Color::white(),
+                    entity->model()
+            );
+        }
     });
 
     scene->entities.forEach<Sprite>([&](auto sprite, auto entity) {
@@ -136,6 +171,34 @@ void Renderer::colorPass(double dt) {
             );
     });
 
+    scene->entities.forEach<Player>([&](Player* player, Entity* playerEntity) {
+        for (Entity* entity : state->mapTiles.getNeighbors(playerEntity->transform.position.resize<2>(), (hg::Vec2i::Identity() + m_window->size().div(PIXELS_PER_METER / MAP_TILE_METERS)).cast<float>())) {
+            auto tile = entity->getComponent<MapTile>();
+            auto rect = tileSS->atlas.getRect(tile->getDef().tileIndex, mapImage->size);
+            m_batchRenderer.sprites.batch(
+                "tiles",
+                hg::Vec2(MAP_TILE_METERS),
+                hg::Vec2::Zero(),
+                rect,
+                Color::white(),
+                entity->model()
+            );
+        }
+    });
+
+    scene->entities.forEach<SpriteSheetComponent>([&](SpriteSheetComponent* ss, auto entity) {
+        auto sheet = getSpriteSheet(ss->spriteSheet);
+        if (sheet->sprites.getSprite(ss->spriteGroup) != sheet->sprites.active()) {
+            sheet->sprites.setSprite(ss->spriteGroup);
+        }
+        sheet->sprites.active()->update(dt);
+        auto rect = sheet->sprites.active()->getRect();
+        auto pos = entity->position().prod(PIXELS_PER_METER).floor().div(PIXELS_PER_METER);
+        pos[2] = entity->position()[2];
+        Mat4 model = Mat4::Translation(pos) * Mat4::Rotation(entity->rotation()) * Mat4::Scale(entity->scale());
+        m_batchRenderer.sprites.batch(ss->texture, ss->size, Vec2::Zero(), rect, Color::white(), model);
+    });
+
     shader = getShader(BATCH_COLOR_SHADER.name);
     shader->use();
     shader->setMat4("projection", camera.projection());
@@ -145,6 +208,11 @@ void Renderer::colorPass(double dt) {
 
     shader = getShader(BATCH_TEXTURE_SHADER.name);
     shader->use();
+    for (int i = 0; i < 10; ++i) {
+        std::string uniformName = "images[" + std::to_string(i) + "]";
+        glUniform1i(glGetUniformLocation(shader->id, uniformName.c_str()), i);
+    }
+
     shader->setMat4("projection", camera.projection());
     shader->setMat4("view", camera.view());
 
@@ -198,15 +266,27 @@ void Renderer::debugPass(double dt) {
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
 
     if (GameState::Get()->debugLevel == DebugLevel::Heavy) {
+
+        scene->entities.forEach<YSort>([&](YSort* sorter, Entity* entity) {
+            if (inView(entity->position())) {
+                auto pos = entity->position() + sorter->sortPoint.resize<3>();
+                // Debug::DrawCircle(pos.x(), pos.y(), 0.01, Color::green(), 1. / PIXELS_PER_METER);
+            }
+        });
+
         scene->entities.forEach<RectCollider>([&](RectCollider *coll, Entity *entity) {
-            Debug::DrawRect(Rect(coll->pos + entity->position().resize<2>(), coll->size), Color::blue(),
-                            1.0 / PIXELS_PER_METER);
+            if (inView(entity->position())) {
+                Debug::DrawRect(Rect(coll->pos + entity->position().resize<2>(), coll->size), Color::red(),
+                                1.0 / PIXELS_PER_METER);
+            }
         });
 
         scene->entities.forEach<CircleCollider>([&](CircleCollider *coll, Entity *entity) {
-            Vec2 pos = entity->transform.position.resize<2>();
-            Debug::DrawCircle(pos[0] + coll->pos[0], pos[1] + coll->pos[1], coll->radius, Color::blue(),
-                              1.0 / PIXELS_PER_METER);
+            if (inView(entity->position())) {
+                Vec2 pos = entity->transform.position.resize<2>();
+                Debug::DrawCircle(pos[0] + coll->pos[0], pos[1] + coll->pos[1], coll->radius, Color::red(),
+                                  1.0 / PIXELS_PER_METER);
+            }
         });
     }
 
@@ -274,4 +354,8 @@ void Renderer::renderTile(hg::Vec2i index, hg::Vec3 position) {
     Rect rect = sheet->atlas.getRect(index, texture->image->size);
     Mat4 model = Mat4::Translation(position);
     m_batchRenderer.sprites.batch("tilesheet", Vec2(1.), Vec2::Identity(), rect, Color::white(), model);
+}
+
+bool Renderer::inView(hg::Vec3 pos) const {
+    return (pos.resize<2>() - camera.transform.position.resize<2>()).magnitude() <= maxBlocks();
 }

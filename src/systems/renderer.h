@@ -36,6 +36,8 @@ public:
 
     Camera camera;
 
+    bool inView(hg::Vec3 pos) const;
+
     Renderer(hg::graphics::Window* window);
 
     void onInit() override;
