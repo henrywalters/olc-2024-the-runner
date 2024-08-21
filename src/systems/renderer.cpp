@@ -15,6 +15,7 @@
 #include "../components/spriteSheet.h"
 #include "../components/tree.h"
 #include "../components/ysort.h"
+#include "../components/uiFrame.h"
 
 using namespace hg;
 using namespace hg::graphics;
@@ -160,7 +161,7 @@ void Renderer::colorPass(double dt) {
             auto rect = tileSS->atlas.getRect(tile->getDef().tileIndex, mapImage->size);
             m_batchRenderer.sprites.batch(
                 "tiles",
-                hg::Vec2(MAP_TILE_METERS),
+                hg::Vec2(MAP_TILE_METERS * 1.001),
                 hg::Vec2::Zero(),
                 rect,
                 Color::white(),
@@ -314,6 +315,14 @@ void Renderer::uiPass(double dt) {
     m_renderPasses.bind(RenderMode::UI);
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
 
+    auto rawMousePos = m_window->input.devices.keyboardMouse()->mousePosition();
+    rawMousePos[1] = m_window->size()[1] - rawMousePos[1];
+
+    scene->entities.forEach<UIFrame>([&](UIFrame* frame, Entity* entity) {
+        frame->frame.update(rawMousePos, dt);
+        frame->frame.render(dt, true);
+    });
+
     m_renderPasses.render(RenderMode::UI, 1);
 }
 
@@ -334,7 +343,7 @@ void Renderer::combinedPass(double dt) {
     shader->setInt("lightTex", 1);
     shader->setInt("debugTex", 2);
     shader->setInt("uiTex", 3);
-    shader->setFloat("useLighting", 1);
+    shader->setFloat("useLighting", state->settings.useLighting ? 1.0f : 0.0f);
     shader->setMat4("view", Mat4::Identity());
     shader->setMat4("projection", Mat4::Orthographic(0, GAME_SIZE[0], 0, GAME_SIZE[1], -100, 100));
     shader->setMat4("model", Mat4::Identity());

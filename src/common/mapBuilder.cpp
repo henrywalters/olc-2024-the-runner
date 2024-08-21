@@ -104,7 +104,7 @@ bool MapBuilder::spawnTree(hg::Vec2i pos) {
         tree->transform.position = hg::Vec3(pos[0] * MAP_TILE_METERS, (m_map->size[1] - pos[1]) * MAP_TILE_METERS, 0);
 
         // Enable for funsies
-        //tree->addComponent<Body>();
+        tree->addComponent<Body>();
 
         state->mapProps.insert(tree->transform.position.resize<2>(), MAP_TILE_METERS, tree);
 

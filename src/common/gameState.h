@@ -36,6 +36,7 @@ public:
     struct Settings {
         bool running = true;
         bool editing = false;
+        bool useLighting = true;
     } settings;
 
     PersistentSettings persistentSettings;
