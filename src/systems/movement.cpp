@@ -12,6 +12,8 @@
 #include "../common/gameState.h"
 #include "imgui.h"
 #include "../components/spriteSheet.h"
+#include "../components/resource.h"
+#include "../components/inventory.h"
 
 using namespace hg;
 using namespace hg::graphics;
@@ -94,6 +96,7 @@ void Movement::onUpdate(double dt) {
     }
 
     scene->entities.forEach<Player>([&](Player* player, Entity* entity) {
+        auto inventory = entity->getComponent<Inventory>();
         auto body = entity->getComponent<Body>();
         Vec3 dir = Vec3(input.axes[Axes::MoveX], input.axes[Axes::MoveY], 0);
         dir.normalize();
@@ -106,6 +109,14 @@ void Movement::onUpdate(double dt) {
         ImGui::SliderFloat("Friction", &body->friction, 0, 500);
         ImGui::Text("Velocity: %s", body->velocity.toString().c_str());
         ImGui::Text("Pos: %s", entity->position().toString().c_str());
+
+        ImGui::SeparatorText("Resources");
+        int total = 0;
+        for (const auto& e : *ENUMS(ResourceType)) {
+            float percent = (state->mapResources.find(e.key) == state->mapResources.end() ? 1 : (float) inventory->count(e.key) / state->mapResources[e.key]) * 100;
+            ImGui::Text("%s: %i (%F%%)", e.label.c_str(), inventory->count(e.key), percent);
+            total += inventory->count(e.key);
+        }
     });
 
     ImGui::End();
@@ -127,12 +138,23 @@ void Movement::bakeStaticColliders() {
 }
 
 void Movement::handleCollision(hg::Entity *entity, Body *body, hg::Entity *neighbor) {
-    if (neighbor == entity) {
+
+    auto state = GameState::Get();
+
+    if (neighbor == entity || !neighbor || !entity) {
         return;
     }
 
     auto hit = math::collisions::checkEntityAgainstEntity(entity, neighbor);
     if (hit.has_value()) {
+
+        if (neighbor->hasComponent<Resource>() && entity->hasComponent<Player>()) {
+            entity->getComponent<Inventory>()->add(neighbor->getComponent<Resource>()->resourceIndex, 1);
+            state->mapProps.remove(neighbor->position().resize<2>(), hg::Vec2(PIXELS_PER_METER), neighbor);
+            m_staticColliderMap.remove(neighbor->position().resize<2>(), hg::Vec2(PIXELS_PER_METER), neighbor);
+            scene->entities.remove(neighbor);
+            return;
+        }
 
         auto neighborBody = neighbor->getComponent<Body>();
         hg::Vec3 neighborVel;

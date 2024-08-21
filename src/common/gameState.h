@@ -15,6 +15,7 @@
 #include "../constants.h"
 #include "../common/enums/actions.h"
 #include "../common/persistentSettings.h"
+#include "resources.h"
 
 ENUM(DebugLevel)
 ENUM_VALUE(DebugLevel, Disabled)
@@ -41,10 +42,28 @@ public:
 
     hg::EntityMap2D mapTiles;
     hg::EntityMap2D mapProps;
+    std::unordered_map<ResourceType::type, int> mapResources;
+
+    bool paused = false;
+    double elapsedTime = 0;
+    double levelTime = 60;
+    int daysPassed = 0;
+
+    struct Time {
+        int hour;
+        int minute;
+
+        std::string toString() const {
+            return (hour < 10 ? "0" : "") + std::to_string(hour) + ":" + (minute < 10 ? "0" : "") + std::to_string(minute);
+        }
+    };
+
+    hg::graphics::Color skyColor() const;
+    Time getTime() const;
 
     hg::Publisher<EventType, Event> events;
 
-    hg::utils::enum_t debugLevel = DebugLevel::Light;
+    hg::utils::enum_t debugLevel = DebugLevel::Disabled;
     hg::input::Actions<hg::utils::enum_t> input;
     hg::utils::Random random = hg::utils::Random(RANDOM_SEED);
 

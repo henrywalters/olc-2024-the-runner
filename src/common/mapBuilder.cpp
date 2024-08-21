@@ -27,6 +27,7 @@ void MapBuilder::build(hg::Vec3& playerPos) {
 
     state->mapTiles.clear();
     state->mapProps.clear();
+    state->mapResources.clear();
 
     for (int h = 0; h < m_map->size[0]; h++) {
         for (int v = 0; v < m_map->size[1]; v++) {
@@ -103,7 +104,7 @@ bool MapBuilder::spawnTree(hg::Vec2i pos) {
         tree->transform.position = hg::Vec3(pos[0] * MAP_TILE_METERS, (m_map->size[1] - pos[1]) * MAP_TILE_METERS, 0);
 
         // Enable for funsies
-        tree->addComponent<Body>();
+        //tree->addComponent<Body>();
 
         state->mapProps.insert(tree->transform.position.resize<2>(), MAP_TILE_METERS, tree);
 
@@ -124,10 +125,16 @@ bool MapBuilder::spawnResource(hg::Vec2i pos, ResourceType::type type) {
         auto coll = entity->addComponent<math::components::CircleCollider>();
         coll->radius = MAP_TILE_METERS * 0.5;
         entity->addComponent<YSort>();
-        entity->addComponent<Body>();
+        //entity->addComponent<Body>();
         entity->transform.position = hg::Vec3(pos[0] * MAP_TILE_METERS, (m_map->size[1] - pos[1]) * MAP_TILE_METERS, 0);
 
         state->mapProps.insert(entity->transform.position.resize<2>(), MAP_TILE_METERS, entity);
+
+        if (state->mapResources.find(type) == state->mapResources.end()) {
+            state->mapResources.insert(std::make_pair(type, 0));
+        }
+
+        state->mapResources[type]++;
 
         return true;
     }

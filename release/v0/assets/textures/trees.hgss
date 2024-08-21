@@ -1,0 +1,13 @@
+[sprite_0]
+members={0,0}
+key=identity
+looping=0
+fps=10
+animated=0
+
+
+[meta]
+sprites=1
+size=4,2
+path=textures/trees.png
+

@@ -69,7 +69,10 @@ void Renderer::onRender(double dt) {
 
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
     m_renderPasses.clear(RenderMode::Color, Color::black());
-    m_renderPasses.clear(RenderMode::Lighting, Color::black());
+
+    // Set the background light color based on the time of day
+    m_renderPasses.clear(RenderMode::Lighting, state->skyColor());
+
     m_renderPasses.clear(RenderMode::Debug, Color::black());
     m_renderPasses.clear(RenderMode::UI, Color::black());
     m_renderPasses.clear(RenderMode::Combined, Color::black());
@@ -331,7 +334,7 @@ void Renderer::combinedPass(double dt) {
     shader->setInt("lightTex", 1);
     shader->setInt("debugTex", 2);
     shader->setInt("uiTex", 3);
-    shader->setFloat("useLighting", 0);
+    shader->setFloat("useLighting", 1);
     shader->setMat4("view", Mat4::Identity());
     shader->setMat4("projection", Mat4::Orthographic(0, GAME_SIZE[0], 0, GAME_SIZE[1], -100, 100));
     shader->setMat4("model", Mat4::Identity());
@@ -366,4 +369,8 @@ void Renderer::renderTile(hg::Vec2i index, hg::Vec3 position) {
 
 bool Renderer::inView(hg::Vec3 pos, float scale) const {
     return (pos.resize<2>() - camera.transform.position.resize<2>()).magnitude() <= maxBlocks() * scale;
+}
+
+hg::graphics::Window *Renderer::window() {
+    return m_window;
 }

@@ -19,6 +19,7 @@
 #include "../common/tiles.h"
 #include "../components/tree.h"
 #include "../common/mapBuilder.h"
+#include "../components/inventory.h"
 
 using namespace hg;
 using namespace hg::graphics;
@@ -40,6 +41,7 @@ void Runtime::onInit() {
     player->name = "Player";
     player->addComponent<Player>();
     player->addComponent<Body>();
+    player->addComponent<Inventory>();
     player->addComponent<YSort>()->sortPoint = hg::Vec2(0, -0.3);
     auto collider = player->addComponent<math::components::CircleCollider>();
     collider->radius = 0.25;
@@ -66,6 +68,23 @@ void Runtime::onInit() {
 }
 
 void Runtime::onUpdate(double dt) {
+
+    auto state = GameState::Get();
+
+    if (state->paused) {
+        return;
+    }
+
+    state->elapsedTime += dt;
+
+    if (state->elapsedTime >= state->levelTime) {
+        // TODO: Add end of day code!
+
+        // state->elapsedTime = 0;
+
+        state->daysPassed++;
+        state->elapsedTime = 0;
+    }
 
 }
 
