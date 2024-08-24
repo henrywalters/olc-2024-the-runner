@@ -56,5 +56,11 @@ void main() {
     vec4 ui = texture(uiTex, TexCoord);
 
     vec3 diffuse = UseLighting * color.rgb * light.rgb + (1. - UseLighting) * raw_color.rgb;
-    FragColor = vec4(diffuse, color.a) + ui + debug;
+    if (ui.a > 0.0f) {
+        FragColor = ui;
+    } else if (debug.a > 0.0f) {
+        FragColor = debug;
+    } else {
+        FragColor = vec4(diffuse, color.a);
+    }
 }

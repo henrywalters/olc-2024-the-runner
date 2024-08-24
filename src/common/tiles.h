@@ -12,7 +12,7 @@
 ENUM(TileType)
 ENUM_VALUE(TileType, Grass)
 ENUM_VALUE(TileType, Sand)
-ENUM_VALUE(TileType, Lava)
+ENUM_VALUE(TileType, Clay)
 ENUM_VALUE(TileType, Water)
 ENUM_VALUE(TileType, Ice)
 
@@ -25,7 +25,7 @@ struct TileDef {
 const std::vector<TileDef> TILES {
     TileDef {TileType::Grass, hg::Vec2i(0, 0), hg::graphics::Color::green()},
     TileDef {TileType::Sand, hg::Vec2i(1, 0), hg::graphics::Color::yellow()},
-    TileDef { TileType::Lava, hg::Vec2i(0, 1), hg::graphics::Color::red()},
+    TileDef { TileType::Clay, hg::Vec2i(1, 2), hg::graphics::Color::red()},
     TileDef{TileType::Water, hg::Vec2i(1, 1), hg::graphics::Color::blue()},
     TileDef{TileType::Ice, hg::Vec2i(0,2), hg::graphics::Color::magenta()},
 };

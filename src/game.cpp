@@ -7,6 +7,7 @@
 #include <hagame/core/assets.h>
 #include <hagame/common/scenes/loading.h>
 #include <hagame/utils/profiler.h>
+#include <hagame/graphics/shaders/texture.h>
 
 #include "scenes/mainMenu.h"
 
@@ -18,6 +19,7 @@
 #include "scenes/runtime.h"
 #include "common/gameState.h"
 #include "common/actionMap.h"
+#include "scenes/settings.h"
 
 #endif
 
@@ -27,6 +29,9 @@ using namespace hg::utils;
 
 void Game::onInit() {
 #if !HEADLESS
+
+    std::cout << BATCH_TEXTURE_SHADER.fragmentSource << "\n";
+
     m_window = Windows::Create(GAME_NAME, GAME_SIZE);
 
     Windows::Events.subscribe(WindowEvents::Close, [&](Window* window) {
@@ -89,8 +94,9 @@ void Game::onInit() {
 
 #endif
         scenes()->add<Runtime>("runtime", m_window);
+        scenes()->add<Settings>("settings", m_window);
         scenes()->add<MainMenu>("main_menu", m_window);
-        scenes()->activate("runtime");
+        scenes()->activate("main_menu");
     };
 
     scenes()->activate("loading");
@@ -121,6 +127,7 @@ void Game::onBeforeUpdate() {
 }
 
 void Game::onAfterUpdate() {
+
 #if USE_IMGUI
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -141,10 +148,14 @@ void Game::onDestroy() {
 }
 
 void Game::onUpdate(double dt) {
+
+    auto state = GameState::Get();
+
     // FILL ME IN!
 #if !HEADLESS
 
-    GameState::Get()->input = m_window->input.player(ACTION_MAP);
+    m_window->setVSync(state->persistentSettings.vsync);
+    state->input = m_window->input.player(ACTION_MAP);
 
 #if USE_CONSOLE
     if (m_console) {
@@ -155,14 +166,18 @@ void Game::onUpdate(double dt) {
 #endif
 
 #if USE_IMGUI
-    ImGui::Begin("Demo Window");
+
+if (state->persistentSettings.devMode) {
+    ImGui::Begin("Game Statistics");
     ImGui::Text("Elapsed Time: %f", GameState::Get()->elapsedTime);
     auto time = GameState::Get()->getTime();
+    ImGui::SliderFloat("Day Length (s)", &state->levelTime, 0.01, 1000);
     ImGui::Text("Day: %i, Time: %s", GameState::Get()->daysPassed, time.toString().c_str());
     ImGui::Text(("FPS: " + std::to_string(1.0 / dt)).c_str());
-    for (const auto& [key, profile] : Profiler::Profiles()) {
+    for (const auto &[key, profile]: Profiler::Profiles()) {
         ImGui::Text("%s: %f ms", key.c_str(), profile.average() * 1000);
     }
     ImGui::End();
+}
 #endif
 }

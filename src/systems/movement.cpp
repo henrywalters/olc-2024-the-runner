@@ -5,6 +5,7 @@
 
 #include <hagame/core/scene.h>
 #include <hagame/utils/profiler.h>
+#include <hagame/ui/elements/label.h>
 
 #include "renderer.h"
 
@@ -14,6 +15,7 @@
 #include "../components/spriteSheet.h"
 #include "../components/resource.h"
 #include "../components/inventory.h"
+#include "../components/uiFrame.h"
 
 using namespace hg;
 using namespace hg::graphics;
@@ -73,11 +75,11 @@ void Movement::onUpdate(double dt) {
             body->velocity -= body->velocity.normalized() * speed * body->friction * dt;
         }
 
-        for (const auto& neighbor : m_colliderMap.getNeighbors(entity->position().xy(), hg::Vec2(2 + speed * dt))) {
+        for (const auto& neighbor : m_colliderMap.getNeighbors(entity->position().xy(), hg::Vec2(5))) {
             handleCollision(entity, body, neighbor);
         }
 
-        for (const auto& neighbor : m_staticColliderMap.getNeighbors(entity->position().xy(), hg::Vec2(2 + speed * dt))) {
+        for (const auto& neighbor : m_staticColliderMap.getNeighbors(entity->position().xy(), hg::Vec2(5))) {
             handleCollision(entity, body, neighbor);
         }
 
@@ -112,11 +114,31 @@ void Movement::onUpdate(double dt) {
 
         ImGui::SeparatorText("Resources");
         int total = 0;
-        for (const auto& e : *ENUMS(ResourceType)) {
-            float percent = (state->mapResources.find(e.key) == state->mapResources.end() ? 1 : (float) inventory->count(e.key) / state->mapResources[e.key]) * 100;
-            ImGui::Text("%s: %i (%F%%)", e.label.c_str(), inventory->count(e.key), percent);
-            total += inventory->count(e.key);
-        }
+
+        scene->entities.forEach<UIFrame>([&](UIFrame* ui, auto entity) {
+
+            auto resourceUI = ui->frame.root()->children()[0];
+            for (const auto& e : *ENUMS(ResourceType)) {
+                float percent = (state->mapResourceCounts.find(e.key) == state->mapResourceCounts.end() ? 1 : (float) inventory->count(e.key) / state->mapResourceCounts[e.key]) * 100;
+                ImGui::Text("%s: %i (%F%%)", e.label.c_str(), inventory->count(e.key), percent);
+                total += inventory->count(e.key);
+                ui::Label* label;
+                hg::structures::Tree::DepthFirstTraverse(resourceUI->children()[e.key], [&](structures::Tree* el) {
+                    if (dynamic_cast<ui::Label*>(static_cast<ui::Element*>(el)) != nullptr) {
+                        label = dynamic_cast<ui::Label*>(static_cast<ui::Element*>(el));
+                        return false;
+                    }
+                    return true;
+                });
+                if (label) {
+                    label->setText(std::to_string(inventory->count(e.key)) + " / " + std::to_string(
+                            state->mapResourceCounts.find(e.key) == state->mapResourceCounts.end() ? 0
+                                                                                                   : state->mapResourceCounts[e.key]));
+                }
+            }
+        });
+
+
     });
 
     ImGui::End();
@@ -129,10 +151,12 @@ void Movement::bakeStaticColliders() {
     m_staticColliderMap.clear();
 
     scene->entities.forEach<math::components::RectCollider>([&](auto coll, Entity* entity) {
+        if (entity->hasComponent<Body>()) { return ; }
         m_staticColliderMap.insert(entity->position().resize<2>(), coll->size, entity);
     });
 
     scene->entities.forEach<math::components::CircleCollider>([&](auto coll, Entity* entity) {
+        if (entity->hasComponent<Body>()) { return ; }
         m_staticColliderMap.insert(entity->position().resize<2>(), coll->radius * 2, entity);
     });
 }
@@ -145,12 +169,22 @@ void Movement::handleCollision(hg::Entity *entity, Body *body, hg::Entity *neigh
         return;
     }
 
+    auto tmpEntityZ = entity->transform.position[2];
+    auto tmpNeighborZ = neighbor->transform.position[2];
+
+    entity->transform.position[2] = 0;
+    neighbor->transform.position[2] = 0;
+
     auto hit = math::collisions::checkEntityAgainstEntity(entity, neighbor);
+
+    entity->transform.position[2] = tmpEntityZ;
+    neighbor->transform.position[2] = tmpNeighborZ;
+
     if (hit.has_value()) {
 
         if (neighbor->hasComponent<Resource>() && entity->hasComponent<Player>()) {
             entity->getComponent<Inventory>()->add(neighbor->getComponent<Resource>()->resourceIndex, 1);
-            state->mapProps.remove(neighbor->position().resize<2>(), hg::Vec2(PIXELS_PER_METER), neighbor);
+            state->mapResources.remove(neighbor->position().resize<2>(), hg::Vec2(PIXELS_PER_METER), neighbor);
             m_staticColliderMap.remove(neighbor->position().resize<2>(), hg::Vec2(PIXELS_PER_METER), neighbor);
             scene->entities.remove(neighbor);
             return;

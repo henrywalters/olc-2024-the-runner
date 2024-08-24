@@ -23,8 +23,8 @@
 #define USE_IMGUI 1 // If true, IMGUI will be enabled and taken care of in game.cpp
 #define USE_CONSOLE 0
 
-constexpr float maxBlocks() {
-    return std::max(GAME_SIZE[0], GAME_SIZE[1]) / PIXELS_PER_METER;
+constexpr hg::Vec2i maxBlocks() {
+    return hg::Vec2i(std::ceil(GAME_SIZE[0] / PIXELS_PER_METER) + 10, std::ceil(GAME_SIZE[1] / PIXELS_PER_METER) + 10);
 }
 
 inline float distance(hg::Vec3 a, hg::Vec3 b) {

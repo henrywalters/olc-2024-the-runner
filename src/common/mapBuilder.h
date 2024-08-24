@@ -9,6 +9,7 @@
 #include "gameState.h"
 #include "tiles.h"
 #include "resources.h"
+#include "props.h"
 
 class MapBuilder {
 public:
@@ -16,6 +17,8 @@ public:
     MapBuilder(hg::Scene* scene, hg::graphics::Image* map, hg::graphics::Image* labels);
 
     void build(hg::Vec3& playerPos);
+
+    void addResources();
 
 private:
 
@@ -25,8 +28,7 @@ private:
 
     void addTile(hg::Entity* entity, hg::Vec2i pos, TileType::type type);
 
-    bool spawnTree(hg::Vec2i pos);
-
+    bool spawnProp(hg::Vec2i pos, PropType::type type);
     bool spawnResource(hg::Vec2i pos, ResourceType::type type);
 
     // Check if there is a tile around other than the current tile

@@ -30,18 +30,28 @@ void MainMenu::onInit() {
     };
 
     std::vector<MenuItem> menuItems {
-
+            {
+                    "New Game",
+                    [&]() {
+                        game()->scenes()->activate("runtime");
+                    }
+            },
+            {
+                    "Settings",
+                    [&]() {
+                        game()->scenes()->activate("settings");
+                    }
+            }
     };
 
 #ifndef __EMSCRIPTEN__
     menuItems.push_back({
-        "Quit to Desktop",
-        [&]() {
-            game()->running(false);
-        }
+            "Quit to Desktop",
+            [&]() {
+                game()->running(false);
+            }
     });
 #endif
-
     std::vector rowSizes {0.15, 0.1};
 
     for (int i = 0; i < menuItems.size(); i++) {
@@ -52,7 +62,7 @@ void MainMenu::onInit() {
 
     {
         auto gridEl = m_menu.addElementTo<ui::GridElement>(menu, menu->config(), Vec2i(0, 0));
-        m_menu.addElementTo<ui::Label>(gridEl, Vec2::Zero(), getFont("8bit_lg"), "HaBan");
+        m_menu.addElementTo<ui::Label>(gridEl, Vec2::Zero(), getFont("8bit_lg"), "The Running Man");
     }
 
     {

@@ -12,6 +12,12 @@
 class UIFrame : public hg::Component {
 public:
 
+    bool debug = true;
+
+    UIFrame(hg::Vec2i size):
+        frame(hg::Rect(hg::Vec2::Zero(), size.cast<float>()))
+    {}
+
     hg::ui::Frame frame;
 
 protected:

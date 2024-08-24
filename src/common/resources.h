@@ -21,8 +21,8 @@ struct ResourceDef {
 
 const std::vector<ResourceDef> RESOURCES {
     ResourceDef{ResourceType::Wood, hg::Vec2i(0, 0), 0.05},
-    ResourceDef {ResourceType::Stone, hg::Vec2i(0, 1), 0.025},
-    ResourceDef {ResourceType::Wheat, hg::Vec2i(0, 2), 0.25},
+    ResourceDef {ResourceType::Stone, hg::Vec2i(1, 0), 0.025},
+    ResourceDef {ResourceType::Wheat, hg::Vec2i(2, 0), 0.15},
 };
 
 #endif //THERUNNER_RESOURCES_H

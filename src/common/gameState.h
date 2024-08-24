@@ -36,18 +36,19 @@ public:
     struct Settings {
         bool running = true;
         bool editing = false;
-        bool useLighting = true;
+        bool useLighting = false;
     } settings;
 
     PersistentSettings persistentSettings;
 
     hg::EntityMap2D mapTiles;
     hg::EntityMap2D mapProps;
-    std::unordered_map<ResourceType::type, int> mapResources;
+    hg::EntityMap2D mapResources;
+    std::unordered_map<ResourceType::type, int> mapResourceCounts;
 
     bool paused = false;
     double elapsedTime = 0;
-    double levelTime = 60;
+    float levelTime = 10;
     int daysPassed = 0;
 
     struct Time {
@@ -64,7 +65,7 @@ public:
 
     hg::Publisher<EventType, Event> events;
 
-    hg::utils::enum_t debugLevel = DebugLevel::Disabled;
+    hg::utils::enum_t debugLevel = DebugLevel::Light;
     hg::input::Actions<hg::utils::enum_t> input;
     hg::utils::Random random = hg::utils::Random(RANDOM_SEED);
 

@@ -7,11 +7,14 @@
 
 #include <hagame/core/scene.h>
 #include <hagame/graphics/window.h>
+#include "../common/mapBuilder.h"
 
 class Runtime : public hg::Scene {
 public:
 
     Runtime(hg::graphics::Window* window);
+
+    void startNewDay();
 
 protected:
 
@@ -19,6 +22,11 @@ protected:
     void onUpdate(double dt) override;
 
 private:
+
+    std::unique_ptr<MapBuilder> m_mapBuilder;
+
+    hg::Entity* m_home;
+    hg::Entity* m_player;
 
     hg::graphics::Window* m_window;
 

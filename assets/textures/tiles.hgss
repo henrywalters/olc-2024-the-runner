@@ -1,12 +1,12 @@
-[sprite_3]
+[sprite_5]
 members={0,0}
-key=grass
+key=identity
 looping=0
 fps=10
 animated=0
 
 
-[sprite_2]
+[sprite_3]
 members={1,0}
 key=sand
 looping=0
@@ -14,32 +14,40 @@ fps=10
 animated=0
 
 
-[sprite_1]
-members={1,1}
-key=water
-looping=0
-fps=10
-animated=0
-
-
-[sprite_4]
-members={1,2}
-key=identity
-looping=0
-fps=10
-animated=0
-
-
-[sprite_0]
-members={0,1}{0,0}
+[sprite_2]
+members={0,0}
 key=lava
 looping=0
 fps=10
 animated=0
 
 
+[sprite_1]
+members={1,1}{0,2}
+key=water
+looping=1
+fps=2
+animated=1
+
+
+[sprite_4]
+members={0,0}
+key=grass
+looping=0
+fps=10
+animated=0
+
+
+[sprite_0]
+members={1,2}
+key=ice
+looping=0
+fps=10
+animated=0
+
+
 [meta]
-sprites=5
+sprites=6
 size=2,3
 path=textures/tiles.png
 

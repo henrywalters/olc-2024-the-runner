@@ -13,9 +13,11 @@
 #include "../components/resource.h"
 #include "../components/tile.h"
 #include "../components/spriteSheet.h"
-#include "../components/tree.h"
 #include "../components/ysort.h"
 #include "../components/uiFrame.h"
+#include "../components/startPoint.h"
+#include "imgui.h"
+#include "../components/prop.h"
 
 using namespace hg;
 using namespace hg::graphics;
@@ -81,7 +83,7 @@ void Renderer::onRender(double dt) {
     m_renderPasses.bind(RenderMode::Color);
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
 
-    Debug::ENABLED = state->debugLevel >= DebugLevel::Light;
+    Debug::ENABLED = state->debugLevel > DebugLevel::Light;
 
     auto shader = getShader(TEXT_SHADER.name);
     shader->use();
@@ -99,18 +101,28 @@ void Renderer::onRender(double dt) {
     Profiler::Start("Renderer::colorPass");
     colorPass(dt);
     Profiler::End("Renderer::colorPass");
+
     Profiler::Start("Renderer::lightPass");
     lightPass(dt);
     Profiler::End("Renderer::lightPass");
-    Profiler::Start("Renderer::debugPass");
-    debugPass(dt);
-    Profiler::End("Renderer::debugPass");
-    Profiler::End("Renderer::onRender");
 
+    Profiler::Start("Renderer::uiPass");
     uiPass(dt);
+    Profiler::End("Renderer::uiPass");
+
+    if (state->persistentSettings.devMode) {
+        Profiler::Start("Renderer::debugPass");
+        debugPass(dt);
+        Profiler::End("Renderer::debugPass");
+    }
+
+    Profiler::Start("Renderer::combinedPass");
     combinedPass(dt);
+    Profiler::End("Renderer::combinedPass");
 
     camera.update(dt);
+
+    Profiler::End("Renderer::onRender");
 
 }
 
@@ -139,7 +151,7 @@ void Renderer::colorPass(double dt) {
                 sprite->texture,
                 sprite->size,
                 sprite->offset,
-                Rect(Vec2(0.5, 0.5), Vec2(0.25, 0.25)),
+                Rect(Vec2(0, 0), Vec2(1.0, 1.0)),
                 sprite->color,
                 entity->model()
             );
@@ -149,19 +161,21 @@ void Renderer::colorPass(double dt) {
     auto tileSS = getSpriteSheet("tiles");
     auto mapImage = getTexture("map")->image.get();
 
-    auto treeSS = getSpriteSheet("trees");
-    auto treeTex = getTexture("trees");
+    auto propSS = getSpriteSheet("props");
+    auto propTex = getTexture("props");
 
     auto resourceSS = getSpriteSheet("resources");
     auto resourceTex = getTexture("resources");
 
+    Profiler::Start("Draw Player");
+
     scene->entities.forEach<Player>([&](Player* player, Entity* playerEntity) {
-        for (Entity* entity : state->mapTiles.getNeighbors(playerEntity->transform.position.resize<2>(), (hg::Vec2i::Identity() + m_window->size().div(PIXELS_PER_METER / MAP_TILE_METERS)).cast<float>())) {
+        for (Entity* entity : state->mapTiles.getNeighbors(playerEntity->transform.position.resize<2>(), maxBlocks().cast<float>())) {
             auto tile = entity->getComponent<MapTile>();
             auto rect = tileSS->atlas.getRect(tile->getDef().tileIndex, mapImage->size);
             m_batchRenderer.sprites.batch(
                 "tiles",
-                hg::Vec2(MAP_TILE_METERS * 1.001),
+                hg::Vec2(MAP_TILE_METERS * 1.001 ),
                 hg::Vec2::Zero(),
                 rect,
                 Color::white(),
@@ -169,34 +183,41 @@ void Renderer::colorPass(double dt) {
             );
         }
 
-        for (Entity* entity : state->mapProps.getNeighbors(playerEntity->transform.position.resize<2>(), (hg::Vec2i::Identity() + m_window->size().div(PIXELS_PER_METER / MAP_TILE_METERS)).cast<float>())) {
-            auto resource = entity->getComponent<Resource>();
-            auto tree = entity->getComponent<TreeComponent>();
+        for (Entity* entity : state->mapProps.getNeighbors(playerEntity->transform.position.resize<2>(), maxBlocks().cast<float>())) {
+            auto prop = entity->getComponent<Prop>();
 
-            if (resource) {
-                auto def = resource->getDef();
+            if (prop) {
+                auto group = propSS->sprites.getSprite(PROPS[prop->propIndex].group)->group();
+                auto spriteIndex = group[prop->spriteIndex];
                 m_batchRenderer.sprites.batch(
-                        "resources",
-                        resourceSS->atlas.getCellSize(resourceTex->image->size, true),
-                        Vec2::Zero(),
-                        resourceSS->atlas.getRect(def.tileIndex, resourceTex->image->size),
-                        Color::white(),
-                        entity->model()
-                );
-            }
-
-            if (tree) {
-                m_batchRenderer.sprites.batch(
-                    "trees",
-                    treeSS->atlas.getCellSize(treeTex->image->size, true),
+                    "props",
+                    propSS->atlas.getCellSize(propTex->image->size, true),
                     Vec2::Zero(),
-                    treeSS->atlas.getRect(tree->index, treeTex->image->size),
+                    propSS->atlas.getRect(spriteIndex, propTex->image->size),
                     Color::white(),
                     entity->model()
                 );
             }
         }
+
+        for (Entity* entity : state->mapResources.getNeighbors(playerEntity->transform.position.resize<2>(), maxBlocks().cast<float>())) {
+            auto resource = entity->getComponent<Resource>();
+            if (resource) {
+                auto def = resource->getDef();
+                auto rect = resourceSS->atlas.getRect(def.tileIndex, resourceTex->image->size);
+                m_batchRenderer.sprites.batch(
+                        "resources",
+                        resourceSS->atlas.getCellSize(resourceTex->image->size, true),
+                        Vec2::Zero(),
+                        rect,
+                        Color::white(),
+                        entity->model()
+                );
+            }
+        }
     });
+
+    Profiler::End("Draw Player");
 
     scene->entities.forEach<SpriteSheetComponent>([&](SpriteSheetComponent* ss, auto entity) {
         auto sheet = getSpriteSheet(ss->spriteSheet);
@@ -274,10 +295,24 @@ void Renderer::lightPass(double dt) {
 }
 
 void Renderer::debugPass(double dt) {
+
+    ImGui::Begin("Renderer");
+
+    ImGui::SliderFloat("Zoom", &camera.zoom, 0.0001, 10);
+
+    ImGui::End();
+
     m_renderPasses.bind(RenderMode::Debug);
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
 
     if (GameState::Get()->debugLevel == DebugLevel::Heavy) {
+
+        scene->entities.forEach<StartPoint>([&](StartPoint* pt, Entity* entity) {
+            if (inView(entity->position(), 0.25)) {
+                auto pos = entity->position() + pt->position;
+                Debug::DrawCircle(pos.x(), pos.y(), pt->radius, Color::blue(), 1. / PIXELS_PER_METER);
+            }
+        });
 
         scene->entities.forEach<YSort>([&](YSort* sorter, Entity* entity) {
             if (inView(entity->position(), 0.25)) {
@@ -315,13 +350,21 @@ void Renderer::uiPass(double dt) {
     m_renderPasses.bind(RenderMode::UI);
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
 
+    auto shader = getShader(COLOR_SHADER.name);
+
+    shader->use();
+    shader->setMat4("view", Mat4::Identity());
+    shader->setMat4("projection", Mat4::Orthographic(0, m_window->size().x(), 0, m_window->size().y(), -100, 100));
+    shader->setMat4("model", Mat4::Identity());
+
     auto rawMousePos = m_window->input.devices.keyboardMouse()->mousePosition();
     rawMousePos[1] = m_window->size()[1] - rawMousePos[1];
 
     scene->entities.forEach<UIFrame>([&](UIFrame* frame, Entity* entity) {
         frame->frame.update(rawMousePos, dt);
-        frame->frame.render(dt, true);
+        frame->frame.render(dt, false);
     });
+
 
     m_renderPasses.render(RenderMode::UI, 1);
 }
@@ -329,8 +372,6 @@ void Renderer::uiPass(double dt) {
 void Renderer::combinedPass(double dt) {
 
     auto state = GameState::Get();
-
-    glDisable(GL_DEPTH_TEST);
     // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     // m_renderPasses.bind(RenderMode::Combined);
@@ -360,6 +401,9 @@ void Renderer::combinedPass(double dt) {
     glActiveTexture(GL_TEXTURE0 + 3);
     m_renderPasses.get(RenderMode::UI)->texture->bind();
 
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+
     m_display.render();
 
     glActiveTexture(GL_TEXTURE0 + 0);
@@ -377,7 +421,7 @@ void Renderer::renderTile(hg::Vec2i index, hg::Vec3 position) {
 }
 
 bool Renderer::inView(hg::Vec3 pos, float scale) const {
-    return (pos.resize<2>() - camera.transform.position.resize<2>()).magnitude() <= maxBlocks() * scale;
+    return (pos.resize<2>() - camera.transform.position.resize<2>()).magnitude() <= maxBlocks().magnitude() * scale;
 }
 
 hg::graphics::Window *Renderer::window() {

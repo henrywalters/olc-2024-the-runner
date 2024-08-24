@@ -8,10 +8,11 @@
 
 #include "mapBuilder.h"
 #include "../components/tile.h"
-#include "../components/tree.h"
 #include "../components/ysort.h"
 #include "../components/resource.h"
 #include "../components/body.h"
+#include "../components/prop.h"
+#include "props.h"
 
 using namespace hg;
 
@@ -21,13 +22,45 @@ MapBuilder::MapBuilder(hg::Scene* scene, hg::graphics::Image* map, hg::graphics:
     m_labels(labels)
 {}
 
+void MapBuilder::addResources() {
+    auto state = GameState::Get();
+
+    state->mapResources.clear();
+    state->mapResourceCounts.clear();
+
+    for (int h = 0; h < m_map->size[0]; h++) {
+        for (int v = 0; v < m_map->size[1]; v++) {
+            auto pixel = m_map->getColor(hg::Vec2i(h, v));
+            auto label = m_labels->getColor(hg::Vec2i(h, v));
+            int tileIndex;
+            if (getTileByColor(pixel, tileIndex)) {
+                auto tile = TILES[tileIndex];
+                if (tile.type == TileType::Grass && !hasNonNeighbor(hg::Vec2i(h, v), tile.type)) {
+
+                    if (state->random.real<float>(0, 1) < (float) v / m_map->size[1]) {
+                        spawnResource(hg::Vec2i(h, v), ResourceType::Wheat);
+                    } else {
+                        spawnResource(hg::Vec2i(h, v), ResourceType::Wood);
+                    }
+
+
+                }
+
+                if (tile.type == TileType::Clay && !hasNonNeighbor(hg::Vec2i(h, v), tile.type)) {
+                    spawnResource(hg::Vec2i(h, v), ResourceType::Stone);
+                }
+            }
+        }
+    }
+}
+
 void MapBuilder::build(hg::Vec3& playerPos) {
 
     auto state = GameState::Get();
 
     state->mapTiles.clear();
     state->mapProps.clear();
-    state->mapResources.clear();
+
 
     for (int h = 0; h < m_map->size[0]; h++) {
         for (int v = 0; v < m_map->size[1]; v++) {
@@ -60,11 +93,19 @@ void MapBuilder::addTile(hg::Entity* entity, hg::Vec2i pos, TileType::type type)
     }
 
     if (type == TileType::Grass && !hasNonNeighbor(pos, type)) {
-        if (spawnTree(pos)) {
+        if (spawnProp(pos, PropType::Tree)) {
             return;
         }
+    }
 
-        if (spawnResource(pos, type)) {
+    if (type == TileType::Sand && !hasNonNeighbor(pos, type)) {
+        if (spawnProp(pos, PropType::PalmTree)) {
+            return;
+        }
+    }
+
+    if (type == TileType::Clay && !hasNonNeighbor(pos, type)) {
+        if (spawnProp(pos, PropType::Rock)) {
             return;
         }
     }
@@ -88,25 +129,33 @@ bool MapBuilder::hasNonNeighbor(hg::Vec2i pos, TileType::type type) {
     return false;
 }
 
-bool MapBuilder::spawnTree(hg::Vec2i pos) {
+bool MapBuilder::spawnProp(hg::Vec2i pos, PropType::type type) {
     auto state = GameState::Get();
+    auto ss = hg::getSpriteSheet("props");
+    auto def = PROPS[type];
+
     auto rand = state->random.real<float>(0, 1);
-    if (rand >= 1.0 - TREE_DENSITY) {
-        auto tree = m_scene->entities.add();
-        tree->transform.scale = Vec3(3.);
-        auto ss = hg::getSpriteSheet("trees");
-        auto index = Vec2i(state->random.integer(0, ss->atlas.size[0]), state->random.integer(0, ss->atlas.size[1]));
-        tree->addComponent<TreeComponent>()->index = index;
-        auto coll = tree->addComponent<math::components::CircleCollider>();
-        coll->radius = 0.45;
-        coll->pos = hg::Vec2(0, -1.5);
-        tree->addComponent<YSort>()->sortPoint = hg::Vec2(0, -1.5);
-        tree->transform.position = hg::Vec3(pos[0] * MAP_TILE_METERS, (m_map->size[1] - pos[1]) * MAP_TILE_METERS, 0);
+    if (rand >= 1.0 - def.rarity) {
+
+        auto scale = state->random.real<float>(def.minScale, def.maxScale);
+
+        auto entity = m_scene->entities.add();
+        entity->transform.scale = Vec3(scale);
+        auto sprites = ss->sprites.getSprite(def.group)->group();
+        auto prop = entity->addComponent<Prop>();
+        prop->propIndex = type;
+        prop->spriteIndex = state->random.integer<int>(0, sprites.size() - 1);
+
+        auto coll = entity->addComponent<math::components::CircleCollider>();
+        coll->radius = def.colliderRadius * scale;
+        coll->pos = def.origin * scale;
+        entity->addComponent<YSort>()->sortPoint = def.origin * scale;
+        entity->transform.position = hg::Vec3(pos[0] * MAP_TILE_METERS, (m_map->size[1] - pos[1]) * MAP_TILE_METERS, 0) - def.origin.resize<3>() * scale;
 
         // Enable for funsies
-        tree->addComponent<Body>();
+        // tree->addComponent<Body>();
 
-        state->mapProps.insert(tree->transform.position.resize<2>(), MAP_TILE_METERS, tree);
+        state->mapProps.insert(entity->transform.position.resize<2>(), MAP_TILE_METERS, entity);
 
         return true;
     }
@@ -128,13 +177,13 @@ bool MapBuilder::spawnResource(hg::Vec2i pos, ResourceType::type type) {
         //entity->addComponent<Body>();
         entity->transform.position = hg::Vec3(pos[0] * MAP_TILE_METERS, (m_map->size[1] - pos[1]) * MAP_TILE_METERS, 0);
 
-        state->mapProps.insert(entity->transform.position.resize<2>(), MAP_TILE_METERS, entity);
+        state->mapResources.insert(entity->transform.position.resize<2>(), MAP_TILE_METERS, entity);
 
-        if (state->mapResources.find(type) == state->mapResources.end()) {
-            state->mapResources.insert(std::make_pair(type, 0));
+        if (state->mapResourceCounts.find(type) == state->mapResourceCounts.end()) {
+            state->mapResourceCounts.insert(std::make_pair(type, 0));
         }
 
-        state->mapResources[type]++;
+        state->mapResourceCounts[type]++;
 
         return true;
     }
