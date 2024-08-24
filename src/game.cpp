@@ -172,6 +172,7 @@ if (state->persistentSettings.devMode) {
     ImGui::Text("Elapsed Time: %f", GameState::Get()->elapsedTime);
     auto time = GameState::Get()->getTime();
     ImGui::SliderFloat("Day Length (s)", &state->levelTime, 0.01, 1000);
+    ImGui::Text("At Home: %i", state->atHome);
     ImGui::Text("Day: %i, Time: %s", GameState::Get()->daysPassed, time.toString().c_str());
     ImGui::Text(("FPS: " + std::to_string(1.0 / dt)).c_str());
     for (const auto &[key, profile]: Profiler::Profiles()) {

@@ -14,7 +14,8 @@ public:
 
     Runtime(hg::graphics::Window* window);
 
-    void startNewDay();
+    void startNewDay(bool addResourcesToInventory, bool clearInventory);
+    void restart();
 
 protected:
 
@@ -28,7 +29,14 @@ private:
     hg::Entity* m_home;
     hg::Entity* m_player;
 
+    hg::Entity* m_deathScreen;
+    hg::Entity* m_survivedScreen;
+
     hg::graphics::Window* m_window;
+
+    void addDeathScreen();
+    void addSurvivedScreen();
+    void addHUD();
 
 };
 

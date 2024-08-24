@@ -16,6 +16,7 @@
 #include "../common/enums/actions.h"
 #include "../common/persistentSettings.h"
 #include "resources.h"
+#include "../components/inventory.h"
 
 ENUM(DebugLevel)
 ENUM_VALUE(DebugLevel, Disabled)
@@ -48,7 +49,7 @@ public:
 
     bool paused = false;
     double elapsedTime = 0;
-    float levelTime = 10;
+    float levelTime = 5;
     int daysPassed = 0;
 
     struct Time {
@@ -65,9 +66,13 @@ public:
 
     hg::Publisher<EventType, Event> events;
 
+    float homeRadius = maxBlocks().magnitude() / 8;
+    bool atHome = false;
     hg::utils::enum_t debugLevel = DebugLevel::Light;
     hg::input::Actions<hg::utils::enum_t> input;
     hg::utils::Random random = hg::utils::Random(RANDOM_SEED);
+
+    Inventory totalInventory;
 
     static GameState* Get();
 

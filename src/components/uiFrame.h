@@ -12,6 +12,7 @@
 class UIFrame : public hg::Component {
 public:
 
+    bool active = true;
     bool debug = true;
 
     UIFrame(hg::Vec2i size):

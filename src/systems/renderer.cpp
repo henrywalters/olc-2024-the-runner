@@ -83,7 +83,7 @@ void Renderer::onRender(double dt) {
     m_renderPasses.bind(RenderMode::Color);
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
 
-    Debug::ENABLED = state->debugLevel > DebugLevel::Light;
+    Debug::ENABLED = state->debugLevel >= DebugLevel::Light;
 
     auto shader = getShader(TEXT_SHADER.name);
     shader->use();
@@ -347,6 +347,9 @@ void Renderer::debugPass(double dt) {
 }
 
 void Renderer::uiPass(double dt) {
+
+    auto state = GameState::Get();
+
     m_renderPasses.bind(RenderMode::UI);
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
 
@@ -361,8 +364,13 @@ void Renderer::uiPass(double dt) {
     rawMousePos[1] = m_window->size()[1] - rawMousePos[1];
 
     scene->entities.forEach<UIFrame>([&](UIFrame* frame, Entity* entity) {
-        frame->frame.update(rawMousePos, dt);
-        frame->frame.render(dt, false);
+        if (frame->active) {
+            if (state->input.buttonsPressed[Buttons::Select]) {
+                frame->frame.root()->trigger(ui::UITriggers::Select);
+            }
+            frame->frame.update(rawMousePos, dt);
+            frame->frame.render(dt, false);
+        }
     });
 
 

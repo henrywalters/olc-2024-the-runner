@@ -23,11 +23,16 @@ using namespace hg::utils;
 
 void Movement::onUpdate(double dt) {
 
+    auto state = GameState::Get();
+
+    if (state->paused) {
+        return;
+    }
+
     Profiler::Start("Movement");
 
     ImGui::Begin("Movement");
 
-    auto state = GameState::Get();
     auto input = state->input;
     auto map = getTexture("map")->image.get();
 
@@ -116,7 +121,9 @@ void Movement::onUpdate(double dt) {
         int total = 0;
 
         scene->entities.forEach<UIFrame>([&](UIFrame* ui, auto entity) {
-
+            if (entity->name != "HUD") {
+                return;
+            }
             auto resourceUI = ui->frame.root()->children()[0];
             for (const auto& e : *ENUMS(ResourceType)) {
                 float percent = (state->mapResourceCounts.find(e.key) == state->mapResourceCounts.end() ? 1 : (float) inventory->count(e.key) / state->mapResourceCounts[e.key]) * 100;
