@@ -12,6 +12,7 @@ class Body : public hg::Component {
 public:
 
     float friction = 10.0;
+    bool dynamic = true;
     hg::Vec3 velocity;
     hg::Vec3 acceleration;
 

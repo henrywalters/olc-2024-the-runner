@@ -147,13 +147,16 @@ void Renderer::colorPass(double dt) {
 
     scene->entities.forEach<Sprite>([&](auto sprite, auto entity) {
         //m_batchRenderer.sprites.batch(entity, sprite);
+        auto pos = entity->position().prod(PIXELS_PER_METER).floor().div(PIXELS_PER_METER);
+        pos[2] = entity->position()[2];
+        Mat4 model = Mat4::Translation(pos) * Mat4::Rotation(entity->rotation()) * Mat4::Scale(entity->scale());
         m_batchRenderer.sprites.batch(
                 sprite->texture,
                 sprite->size,
                 sprite->offset,
                 Rect(Vec2(0, 0), Vec2(1.0, 1.0)),
                 sprite->color,
-                entity->model()
+                model
             );
     });
 
@@ -170,6 +173,9 @@ void Renderer::colorPass(double dt) {
     Profiler::Start("Draw Player");
 
     scene->entities.forEach<Player>([&](Player* player, Entity* playerEntity) {
+
+        Profiler::Start("Map Tiles");
+
         for (Entity* entity : state->mapTiles.getNeighbors(playerEntity->transform.position.resize<2>(), maxBlocks().cast<float>())) {
             auto tile = entity->getComponent<MapTile>();
             auto rect = tileSS->atlas.getRect(tile->getDef().tileIndex, mapImage->size);
@@ -179,9 +185,13 @@ void Renderer::colorPass(double dt) {
                 hg::Vec2::Zero(),
                 rect,
                 Color::white(),
-                entity->model()
+                Mat4::Translation(entity->position())
             );
         }
+
+        Profiler::End("Map Tiles");
+
+        Profiler::Start("Props");
 
         for (Entity* entity : state->mapProps.getNeighbors(playerEntity->transform.position.resize<2>(), maxBlocks().cast<float>())) {
             auto prop = entity->getComponent<Prop>();
@@ -200,6 +210,10 @@ void Renderer::colorPass(double dt) {
             }
         }
 
+        Profiler::End("Props");
+
+        Profiler::Start("Resources");
+
         for (Entity* entity : state->mapResources.getNeighbors(playerEntity->transform.position.resize<2>(), maxBlocks().cast<float>())) {
             auto resource = entity->getComponent<Resource>();
             if (resource) {
@@ -215,6 +229,8 @@ void Renderer::colorPass(double dt) {
                 );
             }
         }
+
+        Profiler::End("Resources");
     });
 
     Profiler::End("Draw Player");

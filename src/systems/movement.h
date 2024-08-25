@@ -24,7 +24,7 @@ private:
     hg::EntityMap2D m_staticColliderMap;
     hg::EntityMap2D m_colliderMap;
 
-    void handleCollision(hg::Entity* entity, Body* body, hg::Entity* neighbor);
+    void handleCollision(hg::math::Ray movementRay, hg::Entity* entity, Body* body, hg::Entity* neighbor);
 };
 
 #endif //THERUNNER_MOVEMENT_H

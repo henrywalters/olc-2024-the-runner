@@ -167,6 +167,10 @@ bool MapBuilder::spawnResource(hg::Vec2i pos, ResourceType::type type) {
     auto state = GameState::Get();
     auto rand = state->random.real<float>(0, 1);
 
+    if (state->mapProps.getNeighbors(hg::Vec2(pos[0] * MAP_TILE_METERS, (m_map->size[1] - pos[1]) * MAP_TILE_METERS), hg::Vec2(1.0)).size() > 0) {
+        return false;
+    }
+
     if (rand >= 1.0 - RESOURCES[type].rarity) {
 
         auto entity = m_scene->entities.add();

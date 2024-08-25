@@ -10,10 +10,13 @@
 
 #include "../components/ysort.h"
 #include "imgui.h"
+#include "../components/body.h"
 
 using namespace hg::utils;
 
 void YSorter::onUpdate(double dt) {
+
+    auto state = GameState::Get();
 
     Profiler::Start("YSorter");
 
@@ -21,9 +24,21 @@ void YSorter::onUpdate(double dt) {
 
     auto renderer = scene->getSystem<Renderer>();
 
-    scene->entities.forEach<YSort>([&](YSort* sort, hg::Entity* entity) {
-        if (renderer->inView(entity->position())) {
-            sortables.push_back(sort);
+    for (auto& entity : state->mapProps.getNeighbors(renderer->camera.transform.position.resize<2>(), maxBlocks().cast<float>())) {
+        if (entity->hasComponent<YSort>()) {
+            sortables.push_back(entity->getComponent<YSort>());
+        }
+    }
+
+    for (auto& entity : state->mapResources.getNeighbors(renderer->camera.transform.position.resize<2>(), maxBlocks().cast<float>())) {
+        if (entity->hasComponent<YSort>()) {
+            sortables.push_back(entity->getComponent<YSort>());
+        }
+    }
+
+    scene->entities.forEach<Body>([&](Body* body, hg::Entity* entity) {
+        if (entity->hasComponent<YSort>()) {
+            sortables.push_back(entity->getComponent<YSort>());
         }
     });
 

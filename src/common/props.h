@@ -26,7 +26,7 @@ struct PropDef {
 const std::vector<PropDef> PROPS {
     PropDef{PropType::Tree, "trees", 0.05, 2, 6, hg::Vec2(0, -0.45), 0.11 },
     PropDef{PropType::PalmTree, "sand", 0.05, 2, 7, hg::Vec2(0, -0.45), 0.11},
-    PropDef{PropType::Rock, "rocks", 0.1, 1, 5, hg::Vec2(0, -0.0), 0.3},
+    PropDef{PropType::Rock, "rocks", 0.15, 1, 5, hg::Vec2(0, -0.0), 0.3},
 };
 
 #endif //THERUNNER_RESOURCES_H

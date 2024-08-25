@@ -11,7 +11,7 @@
 class Player : public hg::Component {
 public:
 
-    float acceleration = 50.0;
+    float acceleration = 100.0;
 
 protected:
 

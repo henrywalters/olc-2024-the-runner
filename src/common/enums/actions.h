@@ -14,5 +14,6 @@ ENUM_VALUE(Axes, MoveY)
 ENUM(Buttons)
 ENUM_VALUE(Buttons, Select)
 ENUM_VALUE(Buttons, Deselect)
+ENUM_VALUE(Buttons, Pause)
 
 #endif //HABAN_ACTIONS_H

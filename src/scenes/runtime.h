@@ -7,6 +7,7 @@
 
 #include <hagame/core/scene.h>
 #include <hagame/graphics/window.h>
+#include <hagame/ui/elements/label.h>
 #include "../common/mapBuilder.h"
 
 class Runtime : public hg::Scene {
@@ -29,11 +30,16 @@ private:
     hg::Entity* m_home;
     hg::Entity* m_player;
 
+    hg::ui::Label* m_totalDisplay;
+    hg::ui::Label* m_timeDisplay;
+    hg::ui::Label* m_survivedDisplay;
+    hg::Entity* m_menuScreen;
     hg::Entity* m_deathScreen;
     hg::Entity* m_survivedScreen;
 
     hg::graphics::Window* m_window;
 
+    void addMenuScreen();
     void addDeathScreen();
     void addSurvivedScreen();
     void addHUD();

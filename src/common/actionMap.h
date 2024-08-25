@@ -14,6 +14,7 @@ const hg::input::ActionMapper<hg::utils::enum_t> ACTION_MAP {
         {
                 { Buttons::Select, {hg::input::devices::MouseButtons::Left, hg::input::devices::GamepadButtons::A}},
                 { Buttons::Deselect, {hg::input::devices::MouseButtons::Right, hg::input::devices::GamepadButtons::B}},
+                { Buttons::Pause, {hg::input::devices::KeyboardButtons::Escape, hg::input::devices::GamepadButtons::Start}},
         },
         {
                 { Axes::MoveX, {hg::input::devices::KeyboardAxes::WASD_X, hg::input::devices::GamepadAxes::LAxisX}},

@@ -37,7 +37,7 @@ public:
     struct Settings {
         bool running = true;
         bool editing = false;
-        bool useLighting = false;
+        bool useLighting = true;
     } settings;
 
     PersistentSettings persistentSettings;
@@ -49,7 +49,7 @@ public:
 
     bool paused = false;
     double elapsedTime = 0;
-    float levelTime = 5;
+    float levelTime = 60;
     int daysPassed = 0;
 
     struct Time {
@@ -66,7 +66,7 @@ public:
 
     hg::Publisher<EventType, Event> events;
 
-    float homeRadius = maxBlocks().magnitude() / 8;
+    float homeRadius = 5;
     bool atHome = false;
     hg::utils::enum_t debugLevel = DebugLevel::Light;
     hg::input::Actions<hg::utils::enum_t> input;

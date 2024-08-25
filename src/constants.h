@@ -24,7 +24,7 @@
 #define USE_CONSOLE 0
 
 constexpr hg::Vec2i maxBlocks() {
-    return hg::Vec2i(std::ceil(GAME_SIZE[0] / PIXELS_PER_METER) + 10, std::ceil(GAME_SIZE[1] / PIXELS_PER_METER) + 10);
+    return hg::Vec2i(std::ceil(GAME_SIZE[0] / PIXELS_PER_METER) + 5, std::ceil(GAME_SIZE[1] / PIXELS_PER_METER) + 5);
 }
 
 inline float distance(hg::Vec3 a, hg::Vec3 b) {

@@ -31,8 +31,6 @@ void Movement::onUpdate(double dt) {
 
     Profiler::Start("Movement");
 
-    ImGui::Begin("Movement");
-
     auto input = state->input;
     auto map = getTexture("map")->image.get();
 
@@ -45,15 +43,16 @@ void Movement::onUpdate(double dt) {
     std::vector<Body*> toCheck;
 
     scene->entities.forEach<Body>([&](Body* body, Entity* entity) {
-
         // Only care about moving objects twice the screen size
         if (!renderer->inView(entity->position(), 1)) {
             return;
         }
         if (entity->hasComponent<math::components::CircleCollider>()) {
-            m_colliderMap.insert(entity->position().resize<2>(), entity->getComponent<math::components::CircleCollider>()->radius * 2, entity);
+            auto coll = entity->getComponent<math::components::CircleCollider>();
+            m_colliderMap.insert(entity->position().resize<2>() + coll->pos, coll->radius * 2, entity);
         } else {
-            m_colliderMap.insert(entity->position().resize<2>(), entity->getComponent<math::components::RectCollider>()->size, entity);
+            auto coll = entity->getComponent<math::components::RectCollider>();
+            m_colliderMap.insert(entity->position().resize<2>() + coll->pos, coll->size, entity);
         }
 
         toCheck.push_back(body);
@@ -65,9 +64,19 @@ void Movement::onUpdate(double dt) {
 
     for (auto body : toCheck) {
 
+        if (!body->dynamic) {
+            continue;
+        }
+
         auto entity = body->entity;
 
         float speed = body->velocity.magnitude();
+
+        auto center = math::collisions::getCenter(entity);
+
+        math::Ray movementRay(entity->position() + center, body->velocity * dt);
+
+        Debug::DrawLine(movementRay.origin.resize<2>(), movementRay.getPointOnLine(1.0).resize<2>(), Color::green(), 2. / PIXELS_PER_METER);
 
         entity->transform.position += body->velocity * dt;
 
@@ -81,11 +90,11 @@ void Movement::onUpdate(double dt) {
         }
 
         for (const auto& neighbor : m_colliderMap.getNeighbors(entity->position().xy(), hg::Vec2(5))) {
-            handleCollision(entity, body, neighbor);
+            handleCollision(movementRay, entity, body, neighbor);
         }
 
         for (const auto& neighbor : m_staticColliderMap.getNeighbors(entity->position().xy(), hg::Vec2(5))) {
-            handleCollision(entity, body, neighbor);
+            handleCollision(movementRay, entity, body, neighbor);
         }
 
         if (entity->hasComponent<SpriteSheetComponent>()) {
@@ -102,6 +111,10 @@ void Movement::onUpdate(double dt) {
         }
     }
 
+    if (state->persistentSettings.devMode) {
+        ImGui::Begin("Movement");
+    }
+
     scene->entities.forEach<Player>([&](Player* player, Entity* entity) {
         auto inventory = entity->getComponent<Inventory>();
         auto body = entity->getComponent<Body>();
@@ -110,14 +123,15 @@ void Movement::onUpdate(double dt) {
         body->acceleration = dir * player->acceleration;
 
         scene->getSystem<Renderer>()->camera.setPosition(entity->position().prod(PIXELS_PER_METER).floor().div(PIXELS_PER_METER));
+        if (state->persistentSettings.devMode) {
+            ImGui::SeparatorText("Player");
+            ImGui::SliderFloat("Accel", &player->acceleration, 0, 2000);
+            ImGui::SliderFloat("Friction", &body->friction, 0, 500);
+            ImGui::Text("Velocity: %s", body->velocity.toString().c_str());
+            ImGui::Text("Pos: %s", entity->position().toString().c_str());
 
-        ImGui::SeparatorText("Player");
-        ImGui::SliderFloat("Accel", &player->acceleration, 0, 500);
-        ImGui::SliderFloat("Friction", &body->friction, 0, 500);
-        ImGui::Text("Velocity: %s", body->velocity.toString().c_str());
-        ImGui::Text("Pos: %s", entity->position().toString().c_str());
-
-        ImGui::SeparatorText("Resources");
+            ImGui::SeparatorText("Resources");
+        }
         int total = 0;
 
         scene->entities.forEach<UIFrame>([&](UIFrame* ui, auto entity) {
@@ -126,11 +140,9 @@ void Movement::onUpdate(double dt) {
             }
             auto resourceUI = ui->frame.root()->children()[0];
             for (const auto& e : *ENUMS(ResourceType)) {
-                float percent = (state->mapResourceCounts.find(e.key) == state->mapResourceCounts.end() ? 1 : (float) inventory->count(e.key) / state->mapResourceCounts[e.key]) * 100;
-                ImGui::Text("%s: %i (%F%%)", e.label.c_str(), inventory->count(e.key), percent);
                 total += inventory->count(e.key);
                 ui::Label* label;
-                hg::structures::Tree::DepthFirstTraverse(resourceUI->children()[e.key], [&](structures::Tree* el) {
+                hg::structures::Tree::DepthFirstTraverse(resourceUI->children()[e.key + 1], [&](structures::Tree* el) {
                     if (dynamic_cast<ui::Label*>(static_cast<ui::Element*>(el)) != nullptr) {
                         label = dynamic_cast<ui::Label*>(static_cast<ui::Element*>(el));
                         return false;
@@ -147,8 +159,9 @@ void Movement::onUpdate(double dt) {
 
 
     });
-
-    ImGui::End();
+    if (state->persistentSettings.devMode) {
+        ImGui::End();
+    }
 
     Profiler::End("Movement");
 }
@@ -168,7 +181,7 @@ void Movement::bakeStaticColliders() {
     });
 }
 
-void Movement::handleCollision(hg::Entity *entity, Body *body, hg::Entity *neighbor) {
+void Movement::handleCollision(math::Ray movementRay, hg::Entity *entity, Body *body, hg::Entity *neighbor) {
 
     auto state = GameState::Get();
 
@@ -181,6 +194,14 @@ void Movement::handleCollision(hg::Entity *entity, Body *body, hg::Entity *neigh
 
     entity->transform.position[2] = 0;
     neighbor->transform.position[2] = 0;
+
+    float t;
+
+    auto rayHit = math::collisions::checkRayAgainstEntity(movementRay, neighbor, t);
+
+    if (rayHit.has_value() && t >= 0 && t < 1) {
+        entity->transform.position = movementRay.origin;
+    }
 
     auto hit = math::collisions::checkEntityAgainstEntity(entity, neighbor);
 
@@ -198,6 +219,9 @@ void Movement::handleCollision(hg::Entity *entity, Body *body, hg::Entity *neigh
         }
 
         auto neighborBody = neighbor->getComponent<Body>();
+        if (neighborBody && !neighborBody->dynamic) {
+            neighborBody = nullptr;
+        }
         hg::Vec3 neighborVel;
 
         auto normal = hit->normal;
