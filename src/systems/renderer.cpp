@@ -18,6 +18,7 @@
 #include "../components/startPoint.h"
 #include "imgui.h"
 #include "../components/prop.h"
+#include "../components/light.h"
 
 using namespace hg;
 using namespace hg::graphics;
@@ -307,6 +308,48 @@ void Renderer::lightPass(double dt) {
     m_renderPasses.bind(RenderMode::Lighting);
     glViewport(0, 0, GAME_SIZE[0], GAME_SIZE[1]);
 
+    auto state = GameState::Get();
+
+    auto shader = getShader("light");
+    shader->use();
+    shader->setMat4("projection", camera.projection());
+    shader->setMat4("view", camera.view());
+
+    m_batchRenderer.quads.clear();
+
+    std::vector<hg::Entity*> toRender;
+
+    scene->entities.forEach<Player>([&](Player* player, Entity* playerEntity) {
+        for (Entity *entity: state->mapProps.getNeighbors(playerEntity->transform.position.resize<2>(),
+                                                          maxBlocks().cast<float>() * 1.5)) {
+            if (entity->hasComponent<Light>()) {
+                toRender.push_back(entity);
+            }
+        }
+    });
+
+    std::sort(toRender.begin(), toRender.end(), [](auto a, auto b) {
+        return a->position()[2] < b->position()[2];
+    });
+
+    for (const auto& entity : toRender) {
+        if (entity->hasComponent<Light>()) {
+            auto light = entity->getComponent<Light>();
+            primitives::Quad quad(light->size, Vec2::Zero());
+            quad.centered(true);
+            MeshInstance mesh(&quad);
+            shader->setVec4("color", light->color);
+            shader->setVec2("origin", entity->position().resize<2>());
+            shader->setFloat("attenuation", light->attenuation);
+            shader->setFloat("attenuationSq", light->attenuationSq);
+            shader->setMat4("model", entity->model());
+            mesh.render();
+        }
+    }
+
+
+    m_batchRenderer.quads.render();
+
     m_renderPasses.render(RenderMode::Lighting, 1);
 }
 
@@ -379,9 +422,18 @@ void Renderer::uiPass(double dt) {
     auto rawMousePos = m_window->input.devices.keyboardMouse()->mousePosition();
     rawMousePos[1] = m_window->size()[1] - rawMousePos[1];
 
+    bool trigger = false;
+
+    if (state->input.buttons[Buttons::Select] && !state->selectPressed) {
+        state->selectPressed = true;
+    } else if (!state->input.buttons[Buttons::Select] && state->selectPressed) {
+        state->selectPressed = false;
+        trigger = true;
+    }
+
     scene->entities.forEach<UIFrame>([&](UIFrame* frame, Entity* entity) {
         if (frame->active) {
-            if (state->input.buttonsPressed[Buttons::Select]) {
+            if (trigger) {
                 frame->frame.root()->trigger(ui::UITriggers::Select);
             }
             frame->frame.update(rawMousePos, dt);

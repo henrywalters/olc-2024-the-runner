@@ -79,14 +79,16 @@ void MainMenu::onInit() {
 
 }
 
-
 void MainMenu::onUpdate(double dt) {
 
     auto state = GameState::Get();
 
     state->input = m_window->input.player(ACTION_MAP, 0);
 
-    if (state->input.buttonsPressed[Buttons::Select]) {
+    if (state->input.buttons[Buttons::Select] && !state->selectPressed) {
+        state->selectPressed = true;
+    } else if (!state->input.buttons[Buttons::Select] && state->selectPressed) {
+        state->selectPressed = false;
         m_menu.root()->trigger(ui::UITriggers::Select);
     }
 
@@ -96,7 +98,8 @@ void MainMenu::onUpdate(double dt) {
     m_window->color(Color::black());
     m_window->clear();
 
+    m_menu.update(rawMousePos, dt);
+
     m_menu.render(dt);
 
-    m_menu.update(rawMousePos, dt);
 }

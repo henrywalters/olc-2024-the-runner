@@ -84,7 +84,10 @@ void Settings::onUpdate(double dt) {
 
     state->input = m_window->input.player(ACTION_MAP, 0);
 
-    if (state->input.buttonsPressed[Buttons::Select]) {
+    if (state->input.buttons[Buttons::Select] && !state->selectPressed) {
+        state->selectPressed = true;
+    } else if (!state->input.buttons[Buttons::Select] && state->selectPressed) {
+        state->selectPressed = false;
         m_menu.root()->trigger(ui::UITriggers::Select);
     }
 

@@ -12,6 +12,7 @@
 #include "../components/resource.h"
 #include "../components/body.h"
 #include "../components/prop.h"
+#include "../components/light.h"
 #include "props.h"
 
 using namespace hg;
@@ -64,6 +65,14 @@ void MapBuilder::build(hg::Vec3& playerPos) {
 
     for (int h = 0; h < m_map->size[0]; h++) {
         for (int v = 0; v < m_map->size[1]; v++) {
+            if (m_labels->getColor(hg::Vec2i(h, v)) == hg::graphics::Color::red()) {
+                playerPos = hg::Vec3(h * MAP_TILE_METERS, (m_map->size[1] - v) * MAP_TILE_METERS, 0);
+            }
+        }
+    }
+
+    for (int h = 0; h < m_map->size[0]; h++) {
+        for (int v = 0; v < m_map->size[1]; v++) {
             auto pixel = m_map->getColor(hg::Vec2i(h, v));
             auto label = m_labels->getColor(hg::Vec2i(h, v));
             int tileIndex;
@@ -72,43 +81,49 @@ void MapBuilder::build(hg::Vec3& playerPos) {
                 entity->addComponent<MapTile>()->tileIndex = tileIndex;
                 entity->transform.position = hg::Vec3(h, m_map->size[1] - v, 0) * MAP_TILE_METERS;
 
-                addTile(entity, hg::Vec2i(h, v), TILES[tileIndex].type);
+                addTile(entity, hg::Vec2i(h, v), TILES[tileIndex].type, (entity->position() - playerPos).magnitude() > 10);
 
                 state->mapTiles.insert(entity->transform.position.resize<2>(), MAP_TILE_METERS, entity);
             }
 
-            if (m_labels->getColor(hg::Vec2i(h, v)) == hg::graphics::Color::red()) {
-                playerPos = hg::Vec3(h * MAP_TILE_METERS, (m_map->size[1] - v) * MAP_TILE_METERS, 0);
+            if (m_labels->getColor(hg::Vec2i(h, v)) == hg::graphics::Color::magenta()) {
+                auto lightEntity = spawnProp(hg::Vec2i(h, v), PropType::Light, true);
+                if (lightEntity) {
+                    auto light = lightEntity->addComponent<Light>();
+
+                }
             }
         }
     }
 }
 
-void MapBuilder::addTile(hg::Entity* entity, hg::Vec2i pos, TileType::type type) {
-    if (type == TileType::Water && hasNonNeighbor(pos, type)) {
+void MapBuilder::addTile(hg::Entity* entity, hg::Vec2i pos, TileType::type type, bool canSpawnProp) {
+
+    bool touchesOther = hasNonNeighbor(pos, type);
+
+    if (type == TileType::Water && touchesOther) {
         auto collider = entity->addComponent<math::components::RectCollider>();
         collider->size = Vec2(MAP_TILE_METERS);
         collider->pos = collider->size * -0.5;
+    }
+
+    if (!canSpawnProp || type == TileType::Water || touchesOther) {
         return;
     }
 
-    if (type == TileType::Grass && !hasNonNeighbor(pos, type)) {
-        if (spawnProp(pos, PropType::Tree)) {
+    if (type == TileType::Grass && spawnProp(pos, PropType::Tree)) {
             return;
-        }
     }
 
-    if (type == TileType::Sand && !hasNonNeighbor(pos, type)) {
-        if (spawnProp(pos, PropType::PalmTree)) {
-            return;
-        }
+    if (type == TileType::Sand && spawnProp(pos, PropType::PalmTree)) {
+        return;
     }
 
-    if (type == TileType::Clay && !hasNonNeighbor(pos, type)) {
-        if (spawnProp(pos, PropType::Rock)) {
-            return;
-        }
+    if (type == TileType::Clay && spawnProp(pos, PropType::Rock)) {
+        return;
     }
+
+    return;
 }
 
 bool MapBuilder::hasNonNeighbor(hg::Vec2i pos, TileType::type type) {
@@ -129,17 +144,19 @@ bool MapBuilder::hasNonNeighbor(hg::Vec2i pos, TileType::type type) {
     return false;
 }
 
-bool MapBuilder::spawnProp(hg::Vec2i pos, PropType::type type) {
+hg::Entity* MapBuilder::spawnProp(hg::Vec2i pos, PropType::type type, bool forceSpawn) {
     auto state = GameState::Get();
     auto ss = hg::getSpriteSheet("props");
     auto def = PROPS[type];
 
+    hg::Entity* entity;
+
     auto rand = state->random.real<float>(0, 1);
-    if (rand >= 1.0 - def.rarity) {
+    if (forceSpawn || rand >= 1.0 - def.rarity) {
 
         auto scale = state->random.real<float>(def.minScale, def.maxScale);
 
-        auto entity = m_scene->entities.add();
+        entity = m_scene->entities.add();
         entity->transform.scale = Vec3(scale);
         auto sprites = ss->sprites.getSprite(def.group)->group();
         auto prop = entity->addComponent<Prop>();
@@ -157,10 +174,10 @@ bool MapBuilder::spawnProp(hg::Vec2i pos, PropType::type type) {
 
         state->mapProps.insert(entity->transform.position.resize<2>(), MAP_TILE_METERS, entity);
 
-        return true;
+        return entity;
     }
 
-    return false;
+    return nullptr;
 }
 
 bool MapBuilder::spawnResource(hg::Vec2i pos, ResourceType::type type) {

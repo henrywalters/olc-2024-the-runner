@@ -66,9 +66,13 @@ public:
 
     hg::Publisher<EventType, Event> events;
 
+    int clickCount = 0;
+
+    bool selectPressed = false;
+
     float homeRadius = 5;
     bool atHome = false;
-    hg::utils::enum_t debugLevel = DebugLevel::Light;
+    hg::utils::enum_t debugLevel = DebugLevel::Disabled;
     hg::input::Actions<hg::utils::enum_t> input;
     hg::utils::Random random = hg::utils::Random(RANDOM_SEED);
 

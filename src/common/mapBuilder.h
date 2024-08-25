@@ -26,9 +26,9 @@ private:
     hg::graphics::Image* m_labels;
     hg::Scene* m_scene;
 
-    void addTile(hg::Entity* entity, hg::Vec2i pos, TileType::type type);
+    void addTile(hg::Entity* entity, hg::Vec2i pos, TileType::type type, bool canSpawnProp);
 
-    bool spawnProp(hg::Vec2i pos, PropType::type type);
+    hg::Entity* spawnProp(hg::Vec2i pos, PropType::type type, bool forceSpawn = false);
     bool spawnResource(hg::Vec2i pos, ResourceType::type type);
 
     // Check if there is a tile around other than the current tile

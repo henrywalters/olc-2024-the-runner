@@ -201,6 +201,13 @@ void Movement::handleCollision(math::Ray movementRay, hg::Entity *entity, Body *
 
     if (rayHit.has_value() && t >= 0 && t < 1) {
         entity->transform.position = movementRay.origin;
+        if (neighbor->hasComponent<Resource>() && entity->hasComponent<Player>()) {
+            entity->getComponent<Inventory>()->add(neighbor->getComponent<Resource>()->resourceIndex, 1);
+            state->mapResources.remove(neighbor->position().resize<2>(), hg::Vec2(PIXELS_PER_METER), neighbor);
+            m_staticColliderMap.remove(neighbor->position().resize<2>(), hg::Vec2(PIXELS_PER_METER), neighbor);
+            scene->entities.remove(neighbor);
+            return;
+        }
     }
 
     auto hit = math::collisions::checkEntityAgainstEntity(entity, neighbor);

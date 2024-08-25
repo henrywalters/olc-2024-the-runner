@@ -12,6 +12,7 @@ ENUM(PropType)
 ENUM_VALUE(PropType, Tree)
 ENUM_VALUE(PropType, PalmTree)
 ENUM_VALUE(PropType, Rock)
+ENUM_VALUE(PropType, Light)
 
 struct PropDef {
     PropType::type type;
@@ -25,8 +26,9 @@ struct PropDef {
 
 const std::vector<PropDef> PROPS {
     PropDef{PropType::Tree, "trees", 0.05, 2, 6, hg::Vec2(0, -0.45), 0.11 },
-    PropDef{PropType::PalmTree, "sand", 0.05, 2, 7, hg::Vec2(0, -0.45), 0.11},
+    PropDef{PropType::PalmTree, "palm_trees", 0.05, 2, 7, hg::Vec2(0, -0.45), 0.11},
     PropDef{PropType::Rock, "rocks", 0.15, 1, 5, hg::Vec2(0, -0.0), 0.3},
+    PropDef{PropType::Light, "lights", 0.02, 1, 1, hg::Vec2(0, 0), 0.1},
 };
 
 #endif //THERUNNER_RESOURCES_H
