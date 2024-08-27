@@ -1,9 +1,14 @@
-# HG Game Template
+# OLC 2024 Game Jam: The Running Man
 
 This template provides a minimal working setup for the HaGameEngine. It includes the 
 ability to run headless as well as in the web using Emscripten.
 
 ## Installation
+
+To download the source and the required sub-repositories, run:
+```bash
+git clone --recurse-submodules https://github.com/henrywalters/olc-2024-the-runner
+```
 
 As this is meant to use a development version of HaGame, you must first clone the repository.
 
