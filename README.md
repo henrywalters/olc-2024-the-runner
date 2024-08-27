@@ -34,7 +34,8 @@ cd public && npm install && cd ..
 To build for desktop, it is sufficient to run:
 
 ```bash
-cmake .
+mkdir build && cd build
+cmake ..
 make
 ```
 

@@ -8,6 +8,7 @@ Makefile
 cmake_install.cmake
 libimgui.a
 release/
+build/
 
 public/*.data
 public/*.html
